@@ -4,73 +4,71 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 let scene, camera, renderer;
 let mouse; // Declare mouse variable globally
 
-function animate() {
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-}
-
-const mazeString = `
-o---o---o---o---o---o---o---o---o---o---o
-|                                       |
-o   o---o---o---o---o---o---o---o---o   o
-|   |               |                   |
-o   o   o---o---o   o   o---o---o   o   o
-|   |       |       |               |   |
-o   o   o   o   o---o   o   o---o   o   o
-|   |   |               |               |
-o   o   o---o---o   o   o---o---o---o   o
-|   |               |                   |
-o---o---o---o---o---o---o---o---o---o---o
+const otherMaze = `
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                               |
++ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+ +
+| |                             |
++ + +-+-+-+-+-+-+-+-+-+-+-+-+ + +
+| |       |   |       |     | | |
++ + +-+-+ + + + +-+-+ + +-+ + + +
+| | |     | |   |   | |   | | | |
++ + + + +-+ +-+-+ + + +-+ + + + +
+| | | | |   | |   | | |   | | | |
++ + + +-+ +-+ + +-+ + + +-+ + + +
+| | | |   | |     | | |   | | | |
++ + + + +-+ + +-+ + + +-+ + + + +
+| | | | | |       |   |   | | | |
++ + + + + + +-+-+-+-+-+-+ + + + +
+| | |   |     |   |       | | | |
++ + +-+-+ +-+ + + + +-+ + + + + +
+| | |         |   |     | | | | |
++ + + +-+-+-+-+-+ +-+ + +-+ + + +
+| | |   |         |   | |   | | |
++ + +-+ + +-+ +-+-+ + +-+ +-+ + +
+| | |   |   | |     | |   | | | |
++ + + +-+ + +-+-+ + +-+ +-+ + + +
+| | |   | | | |   | |   |   | | |
++ + +-+ + +-+ + +-+-+ +-+ + + + +
+| |   |   |   |   |   |   | | | |
++ +-+ + +-+ + +-+ + +-+ +-+ + + +
+|   | |     |     |     |   | | |
++ + + +-+-+-+-+-+-+-+-+-+-+ + + +
+| | |                         | |
++ + +-+-+-+-+-+-+-+-+-+-+-+-+-+ +
+| |                             |
+.-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 `;
 
-function convertMazeStringToArray(mazeString) {
-  const lines = mazeString.trim().split('\n');
-  const height = Math.floor((lines.length + 1) / 2);
-  const width = Math.floor((lines[0].length + 1) / 4);
-
-  const maze = Array.from({ length: height * 2 - 1 }, () => Array(width * 2 - 1).fill(0));
-
-  for (let i = 0; i < lines.length; i++) {
-      for (let j = 0; j < lines[i].length; j++) {
-          const x = Math.floor(i / 2);
-          const y = Math.floor(j / 4);
-
-          if (lines[i][j] === 'o') {
-              maze[x * 2][y * 2] = 1;
-          } else if (lines[i][j] === '-') {
-              maze[x * 2][y * 2 + 1] = 1;
-          } else if (lines[i][j] === '|') {
-              maze[x * 2 + 1][y * 2] = 1;
-          }
-      }
-  }
-
-  return maze;
+function mazeToArray(input) {
+  return input
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => line.split("").map((char) => (char === " " ? 0 : 1)));
 }
 
-
-const maze = convertMazeStringToArray(mazeString);
+// const maze = mazeToArray(convertFromTheOtherFormat(otherMaze));
+const maze = mazeToArray(otherMaze);
 
 function createMaze() {
-  const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
-  const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
+  const wallGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const wallMaterial = new THREE.MeshPhongMaterial({ color: 0x8888ff });
+  const floorGeometry = new THREE.PlaneGeometry(maze[0].length, maze.length);
+  const floorMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc });
 
+  // Create floor
+  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(maze[0].length / 2 - 0.5, -0.5, maze.length / 2 - 0.5);
+  scene.add(floor);
+
+  // Create walls
   for (let i = 0; i < maze.length; i++) {
     for (let j = 0; j < maze[i].length; j++) {
       if (maze[i][j] === 1) {
-        const wall = new THREE.Mesh(
-          new THREE.BoxGeometry(1, 1, 1),
-          wallMaterial
-        );
-        wall.position.set(i, 0.5, j);
+        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+        wall.position.set(j, 0, i);
         scene.add(wall);
-      } else {
-        const floor = new THREE.Mesh(
-          new THREE.BoxGeometry(1, 0.1, 1),
-          floorMaterial
-        );
-        floor.position.set(i, 0, j);
-        scene.add(floor);
       }
     }
   }
@@ -144,7 +142,7 @@ function init() {
     0.1,
     1000
   );
-  camera.position.set(0, 20, 20);
+  camera.position.set(0, 40, 20);
   camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer();
@@ -158,7 +156,7 @@ function init() {
   const ambientLight = new THREE.AmbientLight(0x909090);
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(10, 10, 10).normalize();
   scene.add(directionalLight);
 
@@ -168,18 +166,57 @@ function init() {
 
   // Start the solving process
 
-  const start = [1, 1];
-  const end = [3, 4];
-  const path = dfsMazeSolver(maze, start, end);
-  if (path) {
-    animateMouse(path);
-  }
+  // const start = [1, 1];
+  // const end = [3, 4];
+  // const path = dfsMazeSolver(maze, start, end);
+  // if (path) {
+  //   animateMouse(path);
+  // }
+
+  const path = [
+    { x: 1, y: 1 },
+    { x: 1, y: 2 },
+    { x: 1, y: 3 },
+    { x: 2, y: 3 },
+    { x: 3, y: 3 },
+  ];
+
+  const pathVectors = path.map(
+    (point) => new THREE.Vector3(point.x, point.y, 1)
+  );
 
   controls.update();
 
+  let index = 0;
+
+  function moveMouse() {
+    if (index < pathVectors.length - 1) {
+      const currentPos = pathVectors[index];
+      const nextPos = pathVectors[index + 1];
+
+      new TWEEN.Tween(currentPos)
+        .to(nextPos, 500) // Adjust the duration as needed
+        .onUpdate(() => {
+          mouse.position.set(currentPos.x, currentPos.y, currentPos.z);
+        })
+        .onComplete(() => {
+          index++;
+          moveMouse();
+        })
+        .start();
+    }
+  }
+
   // Render the scene
   renderer.render(scene, camera);
+  moveMouse();
 }
 
 init();
+
+function animate(time) {
+  requestAnimationFrame(animate);
+  TWEEN.update(time);
+  renderer.render(scene, camera);
+}
 animate();
