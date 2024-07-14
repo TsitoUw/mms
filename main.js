@@ -2,6 +2,60 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 const textureLoader = new THREE.TextureLoader();
 const SPEED = 500;
+
+const resultArr = [
+  [0, 0],
+  [0, 1],
+  [0, 2],
+  [0, 3],
+  [0, 4],
+  [0, 5],
+  [0, 6],
+  [0, 7],
+  [0, 8],
+  [0, 9],
+  [0, 10],
+  [0, 11],
+  [0, 12],
+  [0, 13],
+  [0, 14],
+  [0, 15],
+  [1, 15],
+  [2, 15],
+  [3, 15],
+  [4, 15],
+  [5, 15],
+  [6, 15],
+  [7, 15],
+  [8, 15],
+  [9, 15],
+  [10, 15],
+  [11, 15],
+  [12, 15],
+  [13, 15],
+  [14, 15],
+  [15, 15],
+  [15, 14],
+  [15, 13],
+  [15, 12],
+  [15, 11],
+  [15, 10],
+  [15, 9],
+  [15, 8],
+  [15, 7],
+  [15, 6],
+  [15, 5],
+  [15, 4],
+  [15, 3],
+  [15, 2],
+  [15, 1],
+  [14, 1],
+  [13, 1],
+  [13, 0],
+  [14, 0],
+  [15, 0],
+];
+
 const mazeString = `
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                               |
@@ -114,7 +168,7 @@ function createMouse(initPos = [0, 0]) {
 
 const transform = (x) => 2 * x + 1;
 function generatePath(arrPath = [[0, 0]]) {
-  return arrPath.map((arr) => ({ x: transform(arr[0]), z: transform(arr[1]) }));
+  return arrPath.map((arr) => ({ x: transform(arr[1]), z: transform(arr[0]) }));
 }
 
 function pathToVectors(arrPath = [{ x: 0, z: 0 }]) {
@@ -189,24 +243,27 @@ function init() {
   //    👇  can be replaced directly by the binary array
   const maze = mazeToBinaryArray(mazeString);
   // start and end aren't transofmed yet
-  const { floor, startMesh, endMesh, walls } = createMaze(
-    maze,
-    [1, 31],
-    [15, 15]
-  );
-  scene.add(floor);
 
-  scene.add(startMesh);
-  scene.add(endMesh);
-  walls.forEach((wall) => scene.add(wall));
+
+
 
   // create and add mouse
   const mouse = createMouse([1, 1]);
   scene.add(mouse);
 
-  // const path = generatePath(resolvedPath)
+  const path = generatePath(resultArr);
+  const { floor, startMesh, endMesh, walls } = createMaze(
+    maze,
+    [path[0].x, path[0].z],
+    [path[path.length-1].x, path[path.length-1].z]
+  );
+  scene.add(floor);
+  scene.add(startMesh);
+  scene.add(endMesh);
+  walls.forEach((wall) => scene.add(wall));
+  console.log({ path });
   // example: comment this later
-  const path = [
+  const pat2h = [
     { x: 1, z: 31 },
     { x: 1, z: 1 },
     { x: 31, z: 1 },
