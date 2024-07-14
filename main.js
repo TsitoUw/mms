@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+const textureLoader = new THREE.TextureLoader();
 
 const mazeString = `
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -45,17 +46,26 @@ function mazeToBinaryArray(input) {
 }
 
 function createMaze(mazeBinary = [], start = [0, 0], end = [0, 0]) {
-  const wallGeometry = new THREE.BoxGeometry(1, 1, 1);
-  const wallMaterial = new THREE.MeshPhongMaterial({ color: 0x8888ff });
+  const wallTexture = textureLoader.load("./wall.png");
+  const floorTexture = textureLoader.load("./Dirt_01.png");
+  const endTexture = textureLoader.load("./checkered.png");
+
+  const wallGeometry = new THREE.BoxGeometry(1, 2, 1);
+  const wallMaterial = new THREE.MeshPhongMaterial({
+    map: wallTexture,
+  });
+
   const floorGeometry = new THREE.PlaneGeometry(
     mazeBinary[0].length,
     mazeBinary.length
   );
-  const floorMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc });
+  const floorMaterial = new THREE.MeshPhongMaterial({
+    map: floorTexture,
+  });
   const startGeometry = new THREE.PlaneGeometry(1, 1);
-  const startMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444 });
+  const startMaterial = new THREE.MeshPhongMaterial({ color: 0x4444aa });
   const endGeometry = new THREE.PlaneGeometry(1, 1);
-  const endMaterial = new THREE.MeshPhongMaterial({ color: 0x44ff44 });
+  const endMaterial = new THREE.MeshPhongMaterial({ map: endTexture });
 
   const xlength = mazeBinary[0].length;
   const zlength = mazeBinary.length;
@@ -64,6 +74,7 @@ function createMaze(mazeBinary = [], start = [0, 0], end = [0, 0]) {
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(xlength / 2 - 0.5, -0.5, zlength / 2 - 0.5);
+  floor.receiveShadow = true;
 
   const startMesh = new THREE.Mesh(startGeometry, startMaterial);
   startMesh.rotation.x = -Math.PI / 2;
@@ -80,6 +91,8 @@ function createMaze(mazeBinary = [], start = [0, 0], end = [0, 0]) {
       if (mazeBinary[i][j] === 1) {
         const wall = new THREE.Mesh(wallGeometry, wallMaterial);
         wall.position.set(j, 0, i);
+        wall.castShadow = true;
+        wall.receiveShadow = true;
         walls.push(wall);
       }
     }
@@ -89,11 +102,12 @@ function createMaze(mazeBinary = [], start = [0, 0], end = [0, 0]) {
 }
 
 function createMouse(initPos = [0, 0]) {
-  const mouseMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+  const mouseMaterial = new THREE.MeshPhongMaterial({ color: 0x4444ee });
   const mouse = new THREE.Mesh(
     new THREE.BoxGeometry(0.5, 0.5, 0.5),
     mouseMaterial
   );
+  mouse.castShadow = true;
   mouse.position.set(initPos[0], -0.25, initPos[1]);
   return mouse;
 }
@@ -110,6 +124,8 @@ function pathToVectors(arrPath = [{ x: 0, z: 0 }]) {
 function createRenderer() {
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap; // default THREE.PCFShadowMap
   document.body.appendChild(renderer.domElement);
   return renderer;
 }
@@ -134,23 +150,30 @@ function moveMouse(mouse, pathVectors) {
 }
 
 function createLightning(scene) {
-  const ambientLight = new THREE.AmbientLight(0x909090);
+  const ambientLight = new THREE.AmbientLight(0x666699);
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-  directionalLight.position.set(10, 10, 10).normalize();
+  const directionalLight = new THREE.DirectionalLight();
+  directionalLight.intensity = 4;
+  directionalLight.position.set(100, 100, 100);
   scene.add(directionalLight);
+  directionalLight.castShadow = true;
+  directionalLight.shadow.camera.top = 200;
+  directionalLight.shadow.camera.bottom = -200;
+  directionalLight.shadow.camera.left = -200;
+  directionalLight.shadow.camera.right = 200;
+  directionalLight.shadow.camera.near = 1;
+  directionalLight.shadow.camera.far = 1000;
 }
 
 function createCamera(renderer) {
   const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
-    0.1,
+    1,
     1000
   );
-  camera.position.set(0, 40, 20);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(0, 30, 40);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.update();
   return camera;
@@ -162,12 +185,14 @@ function init() {
   const camera = createCamera(renderer);
   createLightning(scene);
 
+
   // create, add maze into scene
   //    👇  can be replaced directly by the binary array
   const maze = mazeToBinaryArray(mazeString);
   // start and end aren't transofmed yet
   const { floor, startMesh, endMesh, walls } = createMaze(maze, [1, 1], [1, 2]);
   scene.add(floor);
+
   scene.add(startMesh);
   scene.add(endMesh);
   walls.forEach((wall) => scene.add(wall));
