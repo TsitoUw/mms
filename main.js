@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 const textureLoader = new THREE.TextureLoader();
-const SPEED = 300;
+const SPEED = 500;
 const mazeString = `
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                               |
@@ -173,7 +173,7 @@ function createCamera(renderer) {
     1,
     1000
   );
-  camera.position.set(0, 30, 40);
+  camera.position.set(0, 30, 0);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.update();
   return camera;
