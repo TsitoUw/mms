@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 const textureLoader = new THREE.TextureLoader();
-
+const SPEED = 300;
 const mazeString = `
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                               |
@@ -104,7 +104,7 @@ function createMaze(mazeBinary = [], start = [0, 0], end = [0, 0]) {
 function createMouse(initPos = [0, 0]) {
   const mouseMaterial = new THREE.MeshPhongMaterial({ color: 0x4444ee });
   const mouse = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 0.5, 0.5),
+    new THREE.SphereGeometry(0.3, 12, 12),
     mouseMaterial
   );
   mouse.castShadow = true;
@@ -118,11 +118,11 @@ function generatePath(arrPath = [[0, 0]]) {
 }
 
 function pathToVectors(arrPath = [{ x: 0, z: 0 }]) {
-  return arrPath.map((point) => new THREE.Vector3(point.x, 0, point.z));
+  return arrPath.map((point) => new THREE.Vector3(point.x, -0.25, point.z));
 }
 
 function createRenderer() {
-  const renderer = new THREE.WebGLRenderer();
+  const renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap; // default THREE.PCFShadowMap
@@ -130,20 +130,20 @@ function createRenderer() {
   return renderer;
 }
 
-function moveMouse(mouse, pathVectors) {
-  let index = 0;
-  if (index < pathVectors.length - 1) {
-    const currentPos = pathVectors[index];
-    const nextPos = pathVectors[index + 1];
+let pathIndex = 0;
+function moveMouse(mouse, pathVector) {
+  if (pathIndex < pathVector.length - 1) {
+    const currentPos = pathVector[pathIndex];
+    const nextPos = pathVector[pathIndex + 1];
 
     new TWEEN.Tween(currentPos)
-      .to(nextPos, 1000) // Adjust the duration as needed
+      .to(nextPos, SPEED) // Adjust the duration as needed
       .onUpdate(() => {
         mouse.position.set(currentPos.x, -0.25, currentPos.z);
       })
       .onComplete(() => {
-        index++;
-        moveMouse(mouse, pathVectors);
+        pathIndex++;
+        moveMouse(mouse, pathVector);
       })
       .start();
   }
@@ -185,12 +185,15 @@ function init() {
   const camera = createCamera(renderer);
   createLightning(scene);
 
-
   // create, add maze into scene
   //    👇  can be replaced directly by the binary array
   const maze = mazeToBinaryArray(mazeString);
   // start and end aren't transofmed yet
-  const { floor, startMesh, endMesh, walls } = createMaze(maze, [1, 1], [1, 2]);
+  const { floor, startMesh, endMesh, walls } = createMaze(
+    maze,
+    [1, 31],
+    [15, 15]
+  );
   scene.add(floor);
 
   scene.add(startMesh);
@@ -204,11 +207,62 @@ function init() {
   // const path = generatePath(resolvedPath)
   // example: comment this later
   const path = [
+    { x: 1, z: 31 },
     { x: 1, z: 1 },
-    { x: 1, z: 2 },
+    { x: 31, z: 1 },
+    { x: 31, z: 3 },
+    { x: 29, z: 3 },
+    { x: 29, z: 29 },
+    { x: 27, z: 29 },
+    { x: 27, z: 23 },
+    { x: 25, z: 23 },
+    { x: 25, z: 25 },
+    { x: 23, z: 25 },
+    { x: 23, z: 27 },
+    { x: 19, z: 27 },
+    { x: 19, z: 25 },
+    { x: 21, z: 25 },
+    { x: 21, z: 23 },
+    { x: 23, z: 23 },
+    { x: 23, z: 21 },
+    { x: 25, z: 21 },
+    { x: 25, z: 19 },
+    { x: 27, z: 19 },
+    { x: 27, z: 5 },
+    { x: 23, z: 5 },
+    { x: 23, z: 7 },
+    { x: 25, z: 7 },
+    { x: 25, z: 9 },
+    { x: 23, z: 9 },
+    { x: 23, z: 11 },
+    { x: 25, z: 11 },
+    { x: 25, z: 15 },
+    { x: 23, z: 15 },
+    { x: 23, z: 17 },
+    { x: 21, z: 17 },
+    { x: 21, z: 19 },
+    { x: 19, z: 19 },
+    { x: 19, z: 21 },
+    { x: 17, z: 21 },
+    { x: 17, z: 23 },
+    { x: 15, z: 23 },
+    { x: 15, z: 25 },
+    { x: 17, z: 25 },
+    { x: 17, z: 27 },
+    { x: 13, z: 27 },
+    { x: 13, z: 25 },
+    { x: 11, z: 25 },
+    { x: 11, z: 27 },
+    { x: 7, z: 27 },
+    { x: 7, z: 25 },
+    { x: 9, z: 25 },
+    { x: 9, z: 19 },
+    { x: 17, z: 19 },
+    { x: 17, z: 15 },
+    { x: 15, z: 15 },
   ];
-  const pathVectors = pathToVectors(path);
-  moveMouse(mouse, pathVectors);
+  const pathVector = pathToVectors(path);
+  moveMouse(mouse, pathVector);
 
   // render / animate
   renderer.render(scene, camera);
